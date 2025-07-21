@@ -49,12 +49,25 @@ router.post("/webhook", async (req, res) => {
         );
 
       case "GetDoctorWorkingHours":
-        const doctorName = parameters["person"]?.name || parameters["person"];
-        const doctor = await Doctor.findOne({ Name: doctorName });
+        let doctorName = req.body.queryResult.parameters["person"];
+
+        if (!doctorName) {
+          return res.json(
+            dialogflowResponse("Please specify the doctor's name.")
+          );
+        }
+
+        // Remove "Dr." prefix if user says "Dr. Satish"
+        doctorName = doctorName.replace(/^Dr\.?\s*/i, "");
+
+        const doctor = await Doctor.findOne(
+          { Name: new RegExp(doctorName, "i") } // case-insensitive match
+        );
+
         if (doctor) {
           return res.json(
             dialogflowResponse(
-              `Dr. ${doctor.Name} is available from ${doctor.From} to ${doctor.To}.`
+              `Dr. ${doctor.Name} is available from ${doctor.From} to ${doctor.To}`
             )
           );
         } else {
