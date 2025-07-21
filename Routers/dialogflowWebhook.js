@@ -49,15 +49,20 @@ router.post("/webhook", async (req, res) => {
         );
 
       case "GetDoctorWorkingHours":
-        let doctorName = req.body.queryResult.parameters["person"];
+        let doctorName = req.body.queryResult.parameters["doctorName"];
 
-        if (!doctorName) {
+        // If it's an object, extract the name string
+        if (typeof doctorName === "object" && doctorName.name) {
+          doctorName = doctorName.name;
+        }
+
+        if (!doctorName || typeof doctorName !== "string") {
           return res.json(
             dialogflowResponse("Please specify the doctor's name.")
           );
         }
 
-        // Remove "Dr." prefix if user says "Dr. Satish"
+        // Clean prefix
         doctorName = doctorName.replace(/^Dr\.?\s*/i, "");
 
         const doctor = await Doctor.findOne(
