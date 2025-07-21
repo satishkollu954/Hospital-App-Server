@@ -1,17 +1,21 @@
 const express = require("express");
 const router = express.Router();
-const Doctor = require("../Models/Doctor"); // Assuming Doctor model exists
-const Location = require("../Models/HospitalLocation"); // Assuming Location model exists
-//const HospitalInfo = require("../Models/HospitalInfo"); // You can create this model if needed
+const Doctor = require("../Models/Doctor");
+const Location = require("../Models/HospitalLocation");
+const FAQ = require("../Models/faqModel");
+const Disease = require("../Models/Disease");
+const Appointment = require("../Models/appointment");
+const DoctorLeave = require("../Models/DoctorLeave");
 
-// Helper: Respond with Dialogflow format
+// Respond to Dialogflow
 function dialogflowResponse(text) {
   return { fulfillmentText: text };
 }
 
-// Webhook route
+// Webhook endpoint
 router.post("/webhook", async (req, res) => {
   const intent = req.body.queryResult.intent.displayName;
+  const parameters = req.body.queryResult.parameters;
 
   try {
     switch (intent) {
@@ -21,42 +25,115 @@ router.post("/webhook", async (req, res) => {
           "Name Designation Specialization"
         );
         const docList = doctors
-          .map((doc, i) => `${i + 1}. Dr. ${doc.Name} (${doc.Specialization})`)
+          .map((doc, i) => `${i + 1}. Dr. ${doc.Name} - ${doc.Specialization}`)
           .join("\n");
         return res.json(
-          dialogflowResponse(`Here is the list of our doctors:\n${docList}`)
+          dialogflowResponse(`Here are our doctors:\n${docList}`)
         );
 
       case "GetHospitalLocations":
         const locations = await Location.find({}, "locationName");
         const locList = locations.map((loc) => loc.locationName).join(", ");
-        return res.json(dialogflowResponse(`We have hospitals at: ${locList}`));
+        return res.json(dialogflowResponse(`We are located at: ${locList}`));
 
       case "GetContactDetails":
         return res.json(
           dialogflowResponse(
-            `You can contact us at:\n📞 +91-9876543210\n📧 hospital@example.com`
+            `📞 Phone: +91-9876543210\n📧 Email: hospital@example.com`
           )
         );
 
       case "GetEmergencyHelp":
         return res.json(
-          dialogflowResponse(
-            `🚨 For emergency, please call our 24x7 helpline at +91-9999999999.`
-          )
+          dialogflowResponse(`🚨 For emergency help, call +91-9999999999.`)
         );
 
       case "GetDoctorWorkingHours":
-        const doctorName = req.body.queryResult.parameters["person"];
+        const doctorName = parameters["person"]?.name || parameters["person"];
         const doctor = await Doctor.findOne({ Name: doctorName });
         if (doctor) {
           return res.json(
             dialogflowResponse(
-              `Dr. ${doctor.Name} is available from ${doctor.From} to ${doctor.To}`
+              `Dr. ${doctor.Name} is available from ${doctor.From} to ${doctor.To}.`
             )
           );
         } else {
-          return res.json(dialogflowResponse("Sorry, doctor not found."));
+          return res.json(
+            dialogflowResponse(`Sorry, I couldn’t find Dr. ${doctorName}.`)
+          );
+        }
+
+      case "GetFAQs":
+        const faqs = await FAQ.find({}, "question answer");
+        const faqList = faqs
+          .map((faq) => `Q: ${faq.question}\nA: ${faq.answer}`)
+          .join("\n\n");
+        return res.json(dialogflowResponse(faqList));
+
+      case "GetDiseases":
+        const diseases = await Disease.find({}, "name description");
+        const diseaseList = diseases
+          .map((d) => `🦠 ${d.name} - ${d.description}`)
+          .join("\n\n");
+        return res.json(dialogflowResponse(diseaseList));
+
+      case "GetAppointments":
+        const email = parameters["email"];
+        const userAppointments = await Appointment.find({ email });
+        if (userAppointments.length === 0) {
+          return res.json(dialogflowResponse("You have no appointments."));
+        }
+        const apptText = userAppointments
+          .map(
+            (a) =>
+              `📅 On ${a.date}, with Dr. ${a.doctor}, for ${a.reason} - Status: ${a.status}`
+          )
+          .join("\n");
+        return res.json(
+          dialogflowResponse(`Here are your appointments:\n${apptText}`)
+        );
+
+      case "GetDoctorsBySpecialization":
+        const specialization =
+          parameters["disease"] || parameters["specialization"];
+        const filteredDoctors = await Doctor.find(
+          { Specialization: new RegExp(specialization, "i") },
+          "Name Designation Specialization"
+        );
+
+        if (filteredDoctors.length > 0) {
+          const doctorList = filteredDoctors
+            .map((doc, i) => `${i + 1}. Dr. ${doc.Name} - ${doc.Designation}`)
+            .join("\n");
+          return res.json(
+            dialogflowResponse(
+              `Here are doctors specialized in ${specialization}:\n${doctorList}`
+            )
+          );
+        } else {
+          return res.json(
+            dialogflowResponse(
+              `Sorry, we couldn't find any ${specialization} specialists.`
+            )
+          );
+        }
+
+      case "GetDoctorLeaves":
+        const leaveDoctorName =
+          parameters["person"]?.name || parameters["person"];
+        const leave = await DoctorLeave.findOne({ doctor: leaveDoctorName });
+        if (leave) {
+          return res.json(
+            dialogflowResponse(
+              `Dr. ${leaveDoctorName} is on leave from ${leave.from} to ${leave.to}.`
+            )
+          );
+        } else {
+          return res.json(
+            dialogflowResponse(
+              `No current leave found for Dr. ${leaveDoctorName}.`
+            )
+          );
         }
 
       default:
