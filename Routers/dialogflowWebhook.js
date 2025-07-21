@@ -93,28 +93,36 @@ router.post("/webhook", async (req, res) => {
 
       case "GetDoctorsBySpecialization":
         const specialization =
-          parameters["disease"] || parameters["specialization"];
+          req.body.queryResult.parameters["specialization"];
+
+        if (!specialization) {
+          return res.json(
+            dialogflowResponse("Please specify a specialization.")
+          );
+        }
+
         const filteredDoctors = await Doctor.find(
-          { Specialization: new RegExp(specialization, "i") },
+          { Specialization: { $regex: new RegExp(specialization, "i") } },
           "Name Designation Specialization"
         );
 
-        if (filteredDoctors.length > 0) {
-          const doctorList = filteredDoctors
-            .map((doc, i) => `${i + 1}. Dr. ${doc.Name} - ${doc.Designation}`)
-            .join("\n");
+        if (!filteredDoctors.length) {
           return res.json(
             dialogflowResponse(
-              `Here are doctors specialized in ${specialization}:\n${doctorList}`
-            )
-          );
-        } else {
-          return res.json(
-            dialogflowResponse(
-              `Sorry, we couldn't find any ${specialization} specialists.`
+              `No doctors found for specialization: ${specialization}`
             )
           );
         }
+
+        const specDocList = filteredDoctors
+          .map((doc, i) => `${i + 1}. Dr. ${doc.Name} (${doc.Designation})`)
+          .join("\n");
+
+        return res.json(
+          dialogflowResponse(
+            `Here are the ${specialization} specialists:\n${specDocList}`
+          )
+        );
 
       case "GetDoctorLeaves":
         const leaveDoctorName =
