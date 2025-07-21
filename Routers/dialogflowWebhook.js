@@ -71,10 +71,8 @@ router.post("/webhook", async (req, res) => {
         return res.json(dialogflowResponse(faqList));
 
       case "GetDiseases":
-        const diseases = await Disease.find({}, "name description");
-        const diseaseList = diseases
-          .map((d) => `🦠 ${d.name} - ${d.description}`)
-          .join("\n\n");
+        const diseases = await Disease.find({}, "disease description");
+        const diseaseList = diseases.map((d) => `🦠 ${d.disease}`).join("\n\n");
         return res.json(dialogflowResponse(diseaseList));
 
       case "GetAppointments":
