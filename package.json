@@ -1,0 +1,26 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@vitalets/google-translate-api": "^8.0.0",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "mongodb": "3.6",
+    "mongoose": "^8.16.4",
+    "multer": "^2.0.1",
+    "nodemailer": "^7.0.3",
+    "nodemon": "^3.1.10",
+    "uuid": "^11.1.0"
+  }
+}
