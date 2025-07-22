@@ -7,7 +7,6 @@ const app = express();
 const userRoute = require("./Routers/user");
 const locationRoutes = require("./Routers/locationRoutes");
 const staffsRoutes = require("./Routers/staffs");
-const chatBotRoutes = require("./Routers/chatbot");
 const dialogflowWebhook = require("./Routers/dialogflowWebhook");
 
 app.use(cors());
@@ -25,7 +24,6 @@ connectToDatabase(process.env.MONGO_URI);
 
 // Routes
 app.use("/api", userRoute);
-app.use("/api", chatBotRoutes);
 app.use("/admin", locationRoutes);
 app.use("/doctor", staffsRoutes);
 app.use("/api", dialogflowWebhook);
