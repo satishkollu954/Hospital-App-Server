@@ -161,6 +161,20 @@ router.post("/webhook", async (req, res) => {
           );
         }
 
+      case "Default Welcome Intent":
+        return res.json(
+          dialogflowResponse(
+            "👋 Hello! Welcome to RaagviCare. How can I assist you today?"
+          )
+        );
+
+      case "Default Fallback Intent":
+        return res.json(
+          dialogflowResponse(
+            "😕 I'm sorry, I didn't understand that. Could you please rephrase?"
+          )
+        );
+
       default:
         return res.json(dialogflowResponse("Sorry, I didn't understand that."));
     }
