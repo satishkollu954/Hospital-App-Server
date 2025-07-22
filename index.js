@@ -11,7 +11,7 @@ const dialogflowWebhook = require("./Routers/dialogflowWebhook");
 
 // CORS Setup: Allow frontend URL from Vercel
 const allowedOrigins = [
-  "https://hospital-app-client-o9y4.vercel.app", // Replace with your actual Vercel URL
+  "*", // Replace with your actual Vercel URL
   "http://localhost:3000", // For local development (React running on localhost)
 ];
 
