@@ -211,9 +211,6 @@ const login = async (req, res) => {
     }
 
     // Step 4: Success
-    if (staff.email === "admin@gmail.com") {
-      return res.json({ success: true, role: "admin" });
-    }
     return res.json({ success: true, role: "staff" });
   } catch (err) {
     console.error("Login error:", err);
