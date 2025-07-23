@@ -126,11 +126,11 @@ router.post("/webhook", async (req, res) => {
         const specialization =
           req.body.queryResult.parameters["specialization"];
 
-        if (!specialization) {
-          return res.json(
-            dialogflowResponse("Please specify a specialization.")
-          );
-        }
+        // if (!specialization) {
+        //   return res.json(
+        //     dialogflowResponse("Please specify a specialization.")
+        //   );
+        // }
 
         const filteredDoctors = await Doctor.find(
           { Specialization: { $regex: new RegExp(specialization, "i") } },
