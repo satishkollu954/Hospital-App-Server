@@ -63,24 +63,42 @@ router.post("/webhook", async (req, res) => {
         });
 
       case "GetHospitalLocations":
-        const state = parameters["geo-state"];
-        let query = {};
-        if (state) query = { state: new RegExp(state, "i") };
+        const stateParam = parameters["geo-state"];
+        let stateQuery = {};
 
-        const locations = await Location.find(query, "locationName city state");
-        if (!locations.length) {
+        if (stateParam) {
+          stateQuery = { State: new RegExp(stateParam, "i") }; // match state case-insensitively
+        }
+
+        const hospitalLocations = await Location.find(stateQuery); // no projection needed
+
+        if (!hospitalLocations.length) {
           return res.json(
             dialogflowResponse(
-              `Sorry, we don’t have any branches in ${
-                state || "the specified area"
+              `❌ Sorry, we don’t have any branches in ${
+                stateParam || "that area"
               }.`
             )
           );
         }
-        const locList = locations
-          .map((l) => `${l.locationName} (${l.city}, ${l.state})`)
-          .join("\n");
-        return res.json(dialogflowResponse(`🏥 Our branches:\n${locList}`));
+
+        const locList = hospitalLocations
+          .map((location) => {
+            const branchesText = location.branches
+              .map(
+                (branch, i) =>
+                  `${i + 1}. ${branch.name} 📞 ${branch.phone} \n📍 [Map](${
+                    branch.mapUrl
+                  })`
+              )
+              .join("\n");
+            return `🗺️ *${location.State}*:\n${branchesText}`;
+          })
+          .join("\n\n");
+
+        return res.json(
+          dialogflowResponse(`🏥 Our hospital branches:\n\n${locList}`)
+        );
 
       case "GetContactDetails":
         return res.json(
@@ -141,18 +159,41 @@ router.post("/webhook", async (req, res) => {
 
       case "GetAppointments":
         const email = parameters["email"];
-        const userAppointments = await Appointment.find({ email });
-        if (userAppointments.length === 0) {
-          return res.json(dialogflowResponse("You have no appointments."));
+
+        if (!email) {
+          return res.json(
+            dialogflowResponse(
+              "Please provide your email address to view appointments."
+            )
+          );
         }
+
+        // lowercase and sanitize
+        const sanitizedEmail = email.trim().toLowerCase();
+
+        const userAppointments = await Appointment.find({
+          email: sanitizedEmail,
+        });
+
+        if (!userAppointments.length) {
+          return res.json(
+            dialogflowResponse(
+              `🔍 No appointments found for ${sanitizedEmail}.`
+            )
+          );
+        }
+
         const apptText = userAppointments
           .map(
-            (a) =>
-              `📅 On ${a.date}, with Dr. ${a.doctor}, for ${a.reason} - Status: ${a.status}`
+            (a, i) =>
+              `${i + 1}. 📅 ${new Date(a.date).toLocaleDateString()} 🕒 ${
+                a.time || "N/A"
+              }\n👨‍⚕️ Dr. ${a.doctor} for ${a.reason} - Status: ${a.status}`
           )
-          .join("\n");
+          .join("\n\n");
+
         return res.json(
-          dialogflowResponse(`Here are your appointments:\n${apptText}`)
+          dialogflowResponse(`📋 Here are your appointments:\n\n${apptText}`)
         );
 
       case "GetDoctorsBySpecialization":
