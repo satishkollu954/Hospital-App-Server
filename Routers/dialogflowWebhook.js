@@ -200,7 +200,7 @@ router.post("/webhook", async (req, res) => {
         }
 
         const specDocList = filteredDoctors
-          .map((doc, i) => `${i + 1}. Dr. ${doc.Name} (${doc.Designation})`)
+          .map((doc, i) => `${i + 1}. ${doc.Name} (${doc.Designation})`)
           .join("\n");
 
         return res.json(
