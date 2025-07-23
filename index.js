@@ -13,7 +13,7 @@ const dialogflowWebhook = require("./Routers/dialogflowWebhook");
 
 // ✅ Fix: Allow requests with no origin (like Dialogflow Messenger)
 const allowedOrigins = [
-  "https://hospital-app-client-o9y4.vercel.app",
+  "https://hospital-app-client-o9y4.vercel.app/",
   "http://localhost:3000",
 ];
 
