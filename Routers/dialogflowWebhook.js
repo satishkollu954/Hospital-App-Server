@@ -9,7 +9,16 @@ const DoctorLeave = require("../Models/DoctorLeave");
 
 // Respond to Dialogflow
 function dialogflowResponse(text) {
-  return { fulfillmentText: text };
+  return {
+    fulfillmentText: text,
+    fulfillmentMessages: [
+      {
+        text: {
+          text: [text],
+        },
+      },
+    ],
+  };
 }
 
 // Webhook endpoint
@@ -29,7 +38,12 @@ router.post("/webhook", async (req, res) => {
         const docList = doctors
           .map((doc, i) => `${i + 1}. Dr. ${doc.Name} - ${doc.Specialization}`)
           .join("\n");
-        const responseText = `Here are our doctors:\n${docList}`;
+        const limitedDoctors =
+          docList.split("\n").slice(0, 10).join("\n") +
+          "\n...and more. Please refine your search.";
+        docList.split("\n").slice(0, 10).join("\n") +
+          "\n...and more. Please refine your search.";
+        const responseText = `Here are our doctors:\n${limitedDoctors}`;
         console.log("🟢 Response sent:", responseText);
         return res.json(dialogflowResponse(responseText));
 
