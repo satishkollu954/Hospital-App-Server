@@ -4,7 +4,7 @@ const Doctor = require("../Models/Doctor");
 const Location = require("../Models/HospitalLocation");
 const FAQ = require("../Models/faqModel");
 const Disease = require("../Models/Disease");
-const Appointment = require("../Models/appointment");
+const { appointmentModel: Appointment } = require("../Models/appointment"); // ✅ FIXED
 const DoctorLeave = require("../Models/DoctorLeave");
 
 // Respond to Dialogflow
@@ -36,41 +36,24 @@ router.post("/webhook", async (req, res) => {
         );
 
         const docList = doctors
-          .map((doc, i) => `${i + 1}.${doc.Name} - ${doc.Specialization}`)
-          .slice(0, 10) // limit first 10
-          .map((line) => ({
-            text: { text: [line] },
-            platform: "PLATFORM_UNSPECIFIED",
-          }));
+          .map((doc, i) => `${i + 1}. Dr. ${doc.Name} - ${doc.Specialization}`)
+          .slice(0, 10);
 
-        docList.push({
-          text: {
-            text: [
-              "...and more. You can see all doctors in the 'Doctors' section.",
-            ],
-          },
-        });
+        const doctorMessage = `🧑‍⚕️ Here are our doctors:\n${docList.join(
+          "\n"
+        )}\n\n...and more in our Doctors section.`;
 
-        return res.json({
-          fulfillmentMessages: [
-            {
-              text: {
-                text: ["🧑‍⚕️ Here are our doctors:"],
-              },
-            },
-            ...docList,
-          ],
-        });
+        return res.json(dialogflowResponse(doctorMessage));
 
       case "GetHospitalLocations":
         const stateParam = parameters["geo-state"];
         let stateQuery = {};
 
         if (stateParam) {
-          stateQuery = { State: new RegExp(stateParam, "i") }; // match state case-insensitively
+          stateQuery = { State: new RegExp(stateParam, "i") }; // case-insensitive search
         }
 
-        const hospitalLocations = await Location.find(stateQuery); // no projection needed
+        const hospitalLocations = await Location.find(stateQuery);
 
         if (!hospitalLocations.length) {
           return res.json(
@@ -84,15 +67,15 @@ router.post("/webhook", async (req, res) => {
 
         const locList = hospitalLocations
           .map((location) => {
-            const branchesText = location.branches
+            const branches = location.branches
               .map(
                 (branch, i) =>
-                  `${i + 1}. ${branch.name} 📞 ${branch.phone} \n📍 [Map](${
+                  `${i + 1}. 🏥 ${branch.name}\n📞 ${branch.phone}\n📍 [Map](${
                     branch.mapUrl
                   })`
               )
-              .join("\n");
-            return `🗺️ *${location.State}*:\n${branchesText}`;
+              .join("\n\n");
+            return `📍 *${location.State}*:\n${branches}`;
           })
           .join("\n\n");
 
@@ -113,64 +96,61 @@ router.post("/webhook", async (req, res) => {
         );
 
       case "GetDoctorWorkingHours":
-        let doctorName = req.body.queryResult.parameters["doctorName"];
-
-        // If it's an object, extract the name string
+        let doctorName = parameters["doctorName"];
         if (typeof doctorName === "object" && doctorName.name) {
           doctorName = doctorName.name;
         }
-
         if (!doctorName || typeof doctorName !== "string") {
           return res.json(
             dialogflowResponse("Please specify the doctor's name.")
           );
         }
 
-        // Clean prefix
         doctorName = doctorName.replace(/^Dr\.?\s*/i, "");
 
-        const doctor = await Doctor.findOne(
-          { Name: new RegExp(doctorName, "i") } // case-insensitive match
-        );
+        const doctor = await Doctor.findOne({
+          Name: new RegExp(doctorName, "i"),
+        });
 
         if (doctor) {
           return res.json(
             dialogflowResponse(
-              `Dr. ${doctor.Name} is available from ${doctor.From} to ${doctor.To}`
+              `🩺 Dr. ${doctor.Name} is available from ${doctor.From} to ${doctor.To}.`
             )
           );
         } else {
           return res.json(
-            dialogflowResponse(`Sorry, I couldn’t find Dr. ${doctorName}.`)
+            dialogflowResponse(`❌ No details found for Dr. ${doctorName}.`)
           );
         }
 
       case "GetFAQs":
         const faqs = await FAQ.find({}, "question answer");
         const faqList = faqs
-          .map((faq) => `Q: ${faq.question}\nA: ${faq.answer}`)
+          .map((faq) => `❓ ${faq.question}\n💬 ${faq.answer}`)
           .join("\n\n");
         return res.json(dialogflowResponse(faqList));
 
       case "GetDiseases":
         const diseases = await Disease.find({}, "disease description");
-        const diseaseList = diseases.map((d) => `🦠 ${d.disease}`).join("\n\n");
-        return res.json(dialogflowResponse(diseaseList));
+        const diseaseList = diseases.map((d) => `🦠 ${d.disease}`).join("\n");
+        return res.json(
+          dialogflowResponse(
+            `Here are some diseases we handle:\n${diseaseList}`
+          )
+        );
 
       case "GetAppointments":
         const email = parameters["email"];
-
         if (!email) {
           return res.json(
             dialogflowResponse(
-              "Please provide your email address to view appointments."
+              "📩 Please provide your email address to retrieve your appointments."
             )
           );
         }
 
-        // lowercase and sanitize
         const sanitizedEmail = email.trim().toLowerCase();
-
         const userAppointments = await Appointment.find({
           email: sanitizedEmail,
         });
@@ -184,28 +164,20 @@ router.post("/webhook", async (req, res) => {
         }
 
         const apptText = userAppointments
-          .map(
-            (a, i) =>
-              `${i + 1}. 📅 ${new Date(a.date).toLocaleDateString()} 🕒 ${
-                a.time || "N/A"
-              }\n👨‍⚕️ Dr. ${a.doctor} for ${a.reason} - Status: ${a.status}`
-          )
+          .map((a, i) => {
+            const formattedDate = new Date(a.date).toLocaleDateString();
+            return `${i + 1}. 📅 ${formattedDate} 🕒 ${
+              a.time || "N/A"
+            }\n👨‍⚕️ Dr. ${a.doctor} for ${a.reason} - Status: ${a.status}`;
+          })
           .join("\n\n");
 
         return res.json(
-          dialogflowResponse(`📋 Here are your appointments:\n\n${apptText}`)
+          dialogflowResponse(`📋 Your Appointments:\n\n${apptText}`)
         );
 
       case "GetDoctorsBySpecialization":
-        const specialization =
-          req.body.queryResult.parameters["specialization"];
-
-        // if (!specialization) {
-        //   return res.json(
-        //     dialogflowResponse("Please specify a specialization.")
-        //   );
-        // }
-
+        const specialization = parameters["specialization"];
         const filteredDoctors = await Doctor.find(
           { Specialization: { $regex: new RegExp(specialization, "i") } },
           "Name Designation Specialization"
@@ -214,7 +186,7 @@ router.post("/webhook", async (req, res) => {
         if (!filteredDoctors.length) {
           return res.json(
             dialogflowResponse(
-              `No doctors found for specialization: ${specialization}`
+              `❌ No doctors found for specialization: ${specialization}`
             )
           );
         }
@@ -240,6 +212,7 @@ router.post("/webhook", async (req, res) => {
         const leaveDoctor = await DoctorLeave.findOne({
           doctor: new RegExp(doctorQuery, "i"),
         });
+
         if (leaveDoctor) {
           return res.json(
             dialogflowResponse(
@@ -267,11 +240,15 @@ router.post("/webhook", async (req, res) => {
         );
 
       default:
-        return res.json(dialogflowResponse("Sorry, I didn't understand that."));
+        return res.json(
+          dialogflowResponse("❌ Sorry, I didn't understand that request.")
+        );
     }
   } catch (err) {
-    console.error("Webhook error:", err);
-    return res.json(dialogflowResponse("Something wrong. Please try again."));
+    console.error("❌ Webhook error:", err);
+    return res.json(
+      dialogflowResponse("Something went wrong. Please try again later.")
+    );
   }
 });
 
