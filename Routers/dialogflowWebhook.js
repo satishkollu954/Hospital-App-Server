@@ -193,9 +193,7 @@ router.post("/webhook", async (req, res) => {
     }
   } catch (err) {
     console.error("Webhook error:", err);
-    return res.json(
-      dialogflowResponse("Something went wrong. Please try again later.")
-    );
+    return res.json(dialogflowResponse("Something wrong. Please try again."));
   }
 });
 
