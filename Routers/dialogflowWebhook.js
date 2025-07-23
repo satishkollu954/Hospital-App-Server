@@ -115,7 +115,7 @@ router.post("/webhook", async (req, res) => {
         if (doctor) {
           return res.json(
             dialogflowResponse(
-              `🩺 Dr. ${doctor.Name} is available from ${doctor.From} to ${doctor.To}.`
+              `🩺${doctor.Name} is available from ${doctor.From} to ${doctor.To}.`
             )
           );
         } else {
