@@ -36,7 +36,7 @@ router.post("/webhook", async (req, res) => {
           "Name Designation Specialization"
         );
         const docList = doctors
-          .map((doc, i) => `${i + 1}. Dr. ${doc.Name} - ${doc.Specialization}`)
+          .map((doc, i) => `${i + 1}. ${doc.Name} - ${doc.Specialization}`)
           .join("\n");
         const limitedDoctors =
           docList.split("\n").slice(0, 10).join("\n") +
