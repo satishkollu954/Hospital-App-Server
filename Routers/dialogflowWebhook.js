@@ -115,7 +115,7 @@ router.post("/webhook", async (req, res) => {
         if (doctor) {
           return res.json(
             dialogflowResponse(
-              `🩺${doctor.Name} is available from ${doctor.From} to ${doctor.To}.`
+              `🩺 ${doctor.Name} is available from ${doctor.From} to ${doctor.To}.`
             )
           );
         } else {
@@ -237,7 +237,7 @@ router.post("/webhook", async (req, res) => {
       case "Default Fallback Intent":
         return res.json(
           dialogflowResponse(
-            "😕 I'm sorry, I didn't understand that. Could you please rephrase?"
+            "🤖 I'm not sure how to help with that yet. You can ask about doctors, appointments, or say 'help'."
           )
         );
 
