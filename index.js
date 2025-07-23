@@ -17,13 +17,14 @@ const allowedOrigins = [
   "http://localhost:3000",
 ];
 
-// Apply CORS middleware globally (but allow requests with no origin — Dialogflow)
+// ✅ Fix: Allow requests with no origin (like Dialogflow Messenger)
 app.use(
   cors({
-    origin: (origin, callback) => {
+    origin: function (origin, callback) {
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
+        console.log("❌ Blocked by CORS:", origin);
         callback(new Error("Not allowed by CORS"));
       }
     },
@@ -32,7 +33,7 @@ app.use(
   })
 );
 
-// Body parsers
+// ✅ Body parsers
 app.use(express.json({ limit: "20mb" }));
 app.use(express.urlencoded({ extended: true, limit: "20mb" }));
 
