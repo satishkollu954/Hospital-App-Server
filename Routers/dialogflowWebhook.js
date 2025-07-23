@@ -174,9 +174,9 @@ router.post("/webhook", async (req, res) => {
         const apptText = userAppointments
           .map((a, i) => {
             const formattedDate = new Date(a.date).toLocaleDateString();
-            return `${i + 1}. 📅 ${formattedDate} 🕒 ${
-              a.time || "N/A"
-            }\n👨‍⚕️ Dr. ${a.doctor} for ${a.reason} - Status: ${a.status}`;
+            return `${i + 1}. 📅 ${formattedDate} 🕒 ${a.time || "N/A"}\n👨‍⚕️ ${
+              a.doctor
+            } for ${a.reason} - Status: ${a.status}`;
           })
           .join("\n\n");
 
