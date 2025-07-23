@@ -24,7 +24,6 @@ function dialogflowResponse(text) {
 // Webhook endpoint
 router.post("/webhook", async (req, res) => {
   console.log("✅ Dialogflow Webhook Hit");
-  // console.log("🔍 Incoming Webhook Body:", JSON.stringify(req.body, null, 2));
   const intent = req.body.queryResult.intent.displayName;
   const parameters = req.body.queryResult.parameters;
 
@@ -40,7 +39,7 @@ router.post("/webhook", async (req, res) => {
           .join("\n");
         const limitedDoctors =
           docList.split("\n").slice(0, 10).join("\n") +
-          "\n...and more. Please refine your search.";
+          "\n...and more. you can see all the doctors in doctors link.";
         const responseText = `Here are our doctors:\n${limitedDoctors}`;
         console.log("🟢 Response sent:", responseText);
         return res.json(dialogflowResponse(responseText));
