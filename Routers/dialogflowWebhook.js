@@ -29,9 +29,9 @@ router.post("/webhook", async (req, res) => {
         const docList = doctors
           .map((doc, i) => `${i + 1}. Dr. ${doc.Name} - ${doc.Specialization}`)
           .join("\n");
-        return res.json(
-          dialogflowResponse(`Here are our doctors:\n${docList}`)
-        );
+        const responseText = `Here are our doctors:\n${docList}`;
+        console.log("🟢 Response sent:", responseText);
+        return res.json(dialogflowResponse(responseText));
 
       case "GetHospitalLocations":
         const locations = await Location.find({}, "locationName");
