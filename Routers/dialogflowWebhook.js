@@ -36,7 +36,7 @@ router.post("/webhook", async (req, res) => {
         );
 
         const docList = doctors
-          .map((doc, i) => `${i + 1}. Dr. ${doc.Name} - ${doc.Specialization}`)
+          .map((doc, i) => `${i + 1}. ${doc.Name} - ${doc.Specialization}`)
           .slice(0, 10);
 
         const doctorMessage = `🧑‍⚕️ Here are our doctors:\n${docList.join(
@@ -70,9 +70,9 @@ router.post("/webhook", async (req, res) => {
             const branches = location.branches
               .map(
                 (branch, i) =>
-                  `${i + 1}. 🏥 ${branch.name}\n📞 ${branch.phone}\n📍 [Map](${
-                    branch.mapUrl
-                  })`
+                  `${i + 1}. 🏥 ${branch.name}\n  📞 ${
+                    branch.phone
+                  }\n📍 [Map](${branch.mapUrl})`
               )
               .join("\n\n");
             return `📍 *${location.State}*:\n${branches}`;
@@ -120,7 +120,9 @@ router.post("/webhook", async (req, res) => {
           );
         } else {
           return res.json(
-            dialogflowResponse(`❌ No details found for Dr. ${doctorName}.`)
+            dialogflowResponse(
+              `❌ Sorry, Dr. ${doctorName} is not available in our hospital. You can ask for another doctor or say "List doctors".`
+            )
           );
         }
 
