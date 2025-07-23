@@ -34,20 +34,53 @@ router.post("/webhook", async (req, res) => {
           {},
           "Name Designation Specialization"
         );
+
         const docList = doctors
-          .map((doc, i) => `${i + 1}. ${doc.Name} - ${doc.Specialization}`)
-          .join("\n");
-        const limitedDoctors =
-          docList.split("\n").slice(0, 10).join("\n") +
-          "\n...and more. you can see all the doctors in doctors link.";
-        const responseText = `Here are our doctors:\n${limitedDoctors}`;
-        console.log("🟢 Response sent:", responseText);
-        return res.json(dialogflowResponse(responseText));
+          .map((doc, i) => `${i + 1}.${doc.Name} - ${doc.Specialization}`)
+          .slice(0, 10) // limit first 10
+          .map((line) => ({
+            text: { text: [line] },
+            platform: "PLATFORM_UNSPECIFIED",
+          }));
+
+        docList.push({
+          text: {
+            text: [
+              "...and more. You can see all doctors in the 'Doctors' section.",
+            ],
+          },
+        });
+
+        return res.json({
+          fulfillmentMessages: [
+            {
+              text: {
+                text: ["🧑‍⚕️ Here are our doctors:"],
+              },
+            },
+            ...docList,
+          ],
+        });
 
       case "GetHospitalLocations":
-        const locations = await Location.find({}, "locationName");
-        const locList = locations.map((loc) => loc.locationName).join(", ");
-        return res.json(dialogflowResponse(`We are located at: ${locList}`));
+        const state = parameters["geo-state"];
+        let query = {};
+        if (state) query = { state: new RegExp(state, "i") };
+
+        const locations = await Location.find(query, "locationName city state");
+        if (!locations.length) {
+          return res.json(
+            dialogflowResponse(
+              `Sorry, we don’t have any branches in ${
+                state || "the specified area"
+              }.`
+            )
+          );
+        }
+        const locList = locations
+          .map((l) => `${l.locationName} (${l.city}, ${l.state})`)
+          .join("\n");
+        return res.json(dialogflowResponse(`🏥 Our branches:\n${locList}`));
 
       case "GetContactDetails":
         return res.json(
@@ -156,20 +189,25 @@ router.post("/webhook", async (req, res) => {
         );
 
       case "GetDoctorLeaves":
-        const leaveDoctorName =
-          parameters["person"]?.name || parameters["person"];
-        const leave = await DoctorLeave.findOne({ doctor: leaveDoctorName });
-        if (leave) {
+        const doctorQuery = parameters["person"]?.name || parameters["person"];
+        if (!doctorQuery) {
+          return res.json(
+            dialogflowResponse("Please specify the doctor's name.")
+          );
+        }
+
+        const leaveDoctor = await DoctorLeave.findOne({
+          doctor: new RegExp(doctorQuery, "i"),
+        });
+        if (leaveDoctor) {
           return res.json(
             dialogflowResponse(
-              `Dr. ${leaveDoctorName} is on leave from ${leave.from} to ${leave.to}.`
+              `📅 Dr. ${leaveDoctor.doctor} is on leave from ${leaveDoctor.from} to ${leaveDoctor.to}.`
             )
           );
         } else {
           return res.json(
-            dialogflowResponse(
-              `No current leave found for Dr. ${leaveDoctorName}.`
-            )
+            dialogflowResponse(`✅ Dr. ${doctorQuery} is currently available.`)
           );
         }
 
