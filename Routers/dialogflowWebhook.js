@@ -15,6 +15,7 @@ function dialogflowResponse(text) {
 // Webhook endpoint
 router.post("/webhook", async (req, res) => {
   console.log("✅ Dialogflow Webhook Hit");
+  console.log("🔍 Incoming Webhook Body:", JSON.stringify(req.body, null, 2));
   const intent = req.body.queryResult.intent.displayName;
   const parameters = req.body.queryResult.parameters;
 
