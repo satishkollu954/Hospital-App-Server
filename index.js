@@ -11,23 +11,23 @@ const locationRoutes = require("./Routers/locationRoutes");
 const staffsRoutes = require("./Routers/staffs");
 const dialogflowWebhook = require("./Routers/dialogflowWebhook");
 
-// Allowed frontend URLs
+// ✅ Fix: Allow requests with no origin (like Dialogflow Messenger)
 const allowedOrigins = [
   "https://hospital-app-client-o9y4.vercel.app",
   "http://localhost:3000",
 ];
 
-// ✅ Fix: Allow requests with no origin (like Dialogflow Messenger)
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || allowedOrigins.includes(origin) || origin === "null") {
         callback(null, true);
       } else {
         console.log("❌ Blocked by CORS:", origin);
         callback(new Error("Not allowed by CORS"));
       }
     },
+    credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
