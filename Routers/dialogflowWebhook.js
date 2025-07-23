@@ -24,8 +24,14 @@ function dialogflowResponse(text) {
 // Webhook endpoint
 router.post("/webhook", async (req, res) => {
   console.log("✅ Dialogflow Webhook Hit");
-  const intent = req.body.queryResult.intent.displayName;
-  const parameters = req.body.queryResult.parameters;
+  const intent = req.body.queryResult.intent?.displayName || "";
+  const action = req.body.queryResult.action || "";
+  const parameters = req.body.queryResult.parameters || {};
+
+  if (action.startsWith("smalltalk.")) {
+    console.log("💬 Small Talk triggered, skipping webhook response.");
+    return res.json({}); // return empty to let Dialogflow use Small Talk answer
+  }
 
   try {
     switch (intent) {
